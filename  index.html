@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Data Explorer</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f1f5f9;font-family:Arial,sans-serif;padding:20px}
+h1{color:#67e8f9;margin-bottom:6px}
+p{color:#aab7cc}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+button,select,input{padding:12px;border-radius:10px;border:1px solid #34445f;background:#172238;color:white}
+button{cursor:pointer}
+button.active{background:#0891b2;border-color:#67e8f9}
+.panel{background:#141e32;border:1px solid #2c3c57;border-radius:14px;padding:16px;margin:14px 0}
+.stat{font-size:24px;font-weight:bold;margin-top:8px}
+table{width:100%;border-collapse:collapse}
+td,th{text-align:left;padding:12px 5px;border-bottom:1px solid #34445f}
+.bar{height:8px;background:#24344d;border-radius:8px;overflow:hidden}
+.fill{height:100%;background:#22d3ee}
+.small{font-size:13px;color:#9caec7}
+</style>
+</head>
+<body>
+<h1>🌍 World Data Explorer</h1>
+<p>Explore statistics from countries around the world.</p>
+
+<div class="metrics">
+<button class="active" onclick="setMetric('gdp',this)">GDP per capita</button>
+<button onclick="setMetric('internet',this)">Internet access</button>
+<button onclick="setMetric('population',this)">Population</button>
+<button onclick="setMetric('co2',this)">CO₂ emissions</button>
+</div>
+
+<div class="panel">
+<div class="small">SELECTED METRIC</div>
+<h2 id="metricTitle">GDP per capita</h2>
+<p>Choose a country to explore its statistics.</p>
+<input id="search" placeholder="Search country..." oninput="render()" style="width:100%">
+</div>
+
+<div class="metrics">
+<div class="panel"><div class="small">COUNTRIES SHOWN</div><div class="stat" id="count">8</div></div>
+<div class="panel"><div class="small">TOP COUNTRY</div><div class="stat" id="top" style="font-size:19px">United States</div></div>
+</div>
+
+<div class="panel">
+<h2>Country rankings</h2>
+<div id="ranking"></div>
+</div>
+
+<div class="panel">
+<h2>Country details</h2>
+<select id="country" onchange="details()" style="width:100%"></select>
+<div id="details"></div>
+</div>
+
+<p class="small">Demo dataset for learning. Values are illustrative, not live official statistics.</p>
+
+<script>
+const countries=[
+{name:"United States",gdp:85000,internet:93,population:340,co2:14.2},
+{name:"China",gdp:13000,internet:78,population:1410,co2:8.9},
+{name:"India",gdp:2700,internet:52,population:1430,co2:2.1},
+{name:"Germany",gdp:55000,internet:93,population:84,co2:7.2},
+{name:"Japan",gdp:34000,internet:87,population:124,co2:8.1},
+{name:"Brazil",gdp:11000,internet:84,population:203,co2:2.3},
+{name:"Australia",gdp:65000,internet:96,population:27,co2:15.1},
+{name:"Nigeria",gdp:1600,internet:40,population:224,co2:0.6}
+];
+const metrics={
+gdp:{title:"GDP per capita",unit:"USD per person",format:v=>"$"+v.toLocaleString()},
+internet:{title:"Internet access",unit:"Percent of population",format:v=>v+"%"},
+population:{title:"Population",unit:"Millions of people",format:v=>v+" million"},
+co2:{title:"CO₂ emissions per capita",unit:"Tonnes per person",format:v=>v+" tonnes"}
+};
+let metric="gdp";
+function setMetric(m,btn){
+metric=m;
+document.querySelectorAll(".metrics button").forEach(b=>b.classList.remove("active"));
+btn.classList.add("active");
+document.getElementById("metricTitle").textContent=metrics[m].title;
+render();
+}
+function render(){
+const q=document.getElementById("search").value.toLowerCase();
+const list=countries.filter(c=>c.name.toLowerCase().includes(q))
+.sort((a,b)=>b[metric]-a[metric]);
+document.getElementById("count").textContent=list.length;
+document.getElementById("top").textContent=list.length?list[0].name:"—";
+document.getElementById("ranking").innerHTML=list.map((c,i)=>`
+<div style="margin:16px 0">
+<div style="display:flex;justify-content:space-between;gap:8px">
+<span>${i+1}. ${c.name}</span><b>${metrics[metric].format(c[metric])}</b>
+</div>
+<div class="bar"><div class="fill" style="width:${Math.max(3,c[metric]/Math.max(1,...list.map(x=>x[metric]))*100)}%"></div></div>
+</div>`).join("")||"No countries found.";
+const sel=document.getElementById("country");
+const old=sel.value;
+sel.innerHTML=countries.map(c=>`<option>${c.name}</option>`).join("");
+if(countries.some(c=>c.name===old))sel.value=old;
+details();
+}
+function details(){
+const c=countries.find(x=>x.name===document.getElementById("country").value)||countries[0];
+document.getElementById("details").innerHTML=`
+<h2>${c.name}</h2>
+<p>GDP per capita: <b>${metrics.gdp.format(c.gdp)}</b></p>
+<p>Internet access: <b>${metrics.internet.format(c.internet)}</b></p>
+<p>Population: <b>${metrics.population.format(c.population)}</b></p>
+<p>CO₂ per capita: <b>${metrics.co2.format(c.co2)}</b></p>`;
+}
+render();
+</script>
+</body>
+</html>
